@@ -1,8 +1,6 @@
 package MST;
 
 import scala.Tuple2;
- 
-
 
 
 
@@ -16,6 +14,8 @@ import org.apache.spark.api.java.function.PairFlatMapFunction;
 import org.apache.spark.api.java.function.PairFunction; 
 import org.apache.spark.api.java.function.Function2; 
 
+//import io.netty.util.ResourceLeakDetector.Level;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileInputStream;
@@ -25,6 +25,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Arrays; 
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List; 
 import java.util.ArrayList; 
@@ -39,33 +41,20 @@ import java.util.Map;
 import java.util.TreeMap; 
 import java.util.SortedMap; 
 import java.util.Iterator; 
+//import java.util.logging.Logger;
 
+import org.apache.log4j.Logger;
+import org.apache.log4j.*;
 import javolution.io.Struct.Bool;
 
 public class ComputeMST {
 	
-    // A utility function to find the vertex with minimum key
-    // value, from the set of vertices not yet included in MST
-    static int minKey(double[] key, Boolean mstSet[], Integer V)
-    {
-        // Initialize min value
-        double min = Integer.MAX_VALUE;
-        int min_index=-1;
- 
-        for (int v = 0; v < V; v++)
-            if (mstSet[v] == false && key[v] < min)
-            {
-                min = key[v];
-                min_index = v;
-            }
- 
-        return min_index;
-    }
+
 	
-    public static String[] split_new(String inString)
+    public static String[] split_new(String inString, String splitter)
     {
        List<String> outList = new ArrayList<String>();
-       String[]     test    = inString.split(";");
+       String[]     test    = inString.split(splitter);
 
        for(String s : test)
        {
@@ -78,34 +67,19 @@ public class ComputeMST {
        return res;
     }
     
-    static String rNet(double r, String set){
-    	
-    	String cords[] = set.split(" ");
-    	
-    	
-    	return null;
-    }
-    
-    static String compute_min_dist_between_two_sets(String[] set1, String[] set2){
-    	
-    //	System.out.println("set1: ");
-    	for(String ss: set1){
-    		//System.out.println(ss);
-    	}
-    	
-    	//System.out.println("set2: ");
-    	for(String ss: set2){
-    		//System.out.println(ss);
-    	}
+
+
+    static String find_min_dist(ArrayList<String> a1, ArrayList<String> a2){
     	
     	double Min = Double.MAX_VALUE;
     	String new_edge = "";
-    	for(String s1 : set1){
-    		if(s1 == set1[0]) continue;
+    	for(int i = 0; i < a1.size(); i++){
+    		String s1 = a1.get(i);
     		String cords1[] = s1.split(",");
-     		for(String s2: set2){
+     		for(int j = i; j < a2.size(); j++){
+     			String s2 = a2.get(j);
      			String cords2[] = s2.split(",");
-    			if(s2 == set2[0]) continue;
+    		
     			double dist1 = compute_distance(cords1[0], cords2[1]);
     			if(dist1 < Min){
     				Min = dist1;
@@ -130,165 +104,108 @@ public class ComputeMST {
     		
     	}
     	
-
+    	
+    	
     	return new_edge + "_" + Min;
-    }
-    
-    
-    static String find_min_distance_and_update_connected_components(String[][] sets, Integer size)
-    {
-    	for(int i = 0; i < size; i++){
-    		//System.out.println("CCCCCC" + i + ":  " + sets[i][0]); 
-
-    	}
-    	System.out.println("find min distance and update connected components ...");
-    	
-    	double min = Double.MAX_VALUE;
-    	String edge_added = "";
-    	Integer c1 = 0;
-    	Integer c2 = 0;
-    	
-    	System.out.println("size = " + size);
-    	
-    	for(int k = 0; k < size ; k++){	
-    		int l = sets[k].length;
-    		System.out.println("l = " + l);
-        	for(int j = 0; j < size; j++){
-        		System.out.println("j = " + j + " , " + " k = " + k);
-        		System.out.println(" check ");
-        		//System.out.println(sets[k][0] + "<->" + sets[j][0]);
-        		if(sets[k][0] != sets[j][0]){
-        		//	System.out.println(sets[k][0] + "<->" + sets[j][0]);	
-        		String res = compute_min_dist_between_two_sets(sets[k], sets[j]);
-        		String tok[] = res.split("_");
-        		String new_edge = tok[0];
-        		double cur_min = Double.parseDouble(tok[1]);
-        		if(cur_min < min){
-        			min = cur_min;
-        			edge_added = new_edge; 
-        			c1 = j;
-        			c2 = k;
-        		}
-        		
-        		}
-        	}       	
-        }
-    	
-    	System.out.println("out of loop ...");
-    	
-      	for(int i = 0; i < size; i++){
-    		//System.out.println("bbbbb" + i + ":  " + sets[i][0]); 
-
-    	}
-    	
-    	//System.out.println("c1 = " + c1 + " vl = " + sets[c1][0]);
-    	
-    	//System.out.println("c2 = " + c2 + "  vl = " + sets[c2][0]);
-    	
-    	Integer com_ind = Integer.parseInt(sets[c1][0]);
-    	
-    	for(int i = 0; i < size; i++){
-    		System.out.println(i + ":  " + sets[i][0] + " < - > " + sets[c1][0]);
-    		if(Integer.parseInt(sets[i][0]) == com_ind){
-    			//System.out.println("iiii = " + i);
-    			//System.out.println(sets[i][0] + " < - > " + sets[c1][0]);
-    			sets[i][0] = sets[c2][0];
-    		}
-    	}
-    	if(Integer.parseInt(sets[c1][0]) < Integer.parseInt(sets[c2][0])){
-  //  		sets[c2][0] = sets[c1][0];
-    	}
-    	else{
-//    		sets[c1][0] = sets[c2][0];
-    	}
-    
-    	//System.out.println("c1 = " + c1 + " , " + "c2 = " + c2);
-    	System.out.println("sets ...");
-    	for(int j = 0; j < size; j++){
-    		for(String rr: sets[j]){
-    			System.out.println("rr = " + rr);
-    		}
-    		System.out.println("............................");
-    	}
-    	
-    	return edge_added;
-    	
     	
     }
     
-    static String combine_connected_components(List<String> s){
-    	
-    	System.out.println("Combine Connected Components");
-    	
-    	Integer size = s.size();
-    	System.out.println("size = " +  size);
-    	String sets[][] = new String[size + 1][];
-    	int i = 0;
-    	int connected_comp = 0;
+    static double combine_connected_components(List<String> s){
+    	System.out.println("Combine Connected Components NEW");
+    	Map<Integer, ArrayList<String>> CC = new HashMap<Integer, ArrayList<String>>();
+    	Integer Key = 0;
     	for(String ss: s){
-    		//System.out.println("ss = " + ss);
-    		ss = connected_comp + ";" + ss;
-    		String toks[] = split_new(ss); //ss.split_new(";");
-    		sets[i] = toks;
-    		i++;
-    		connected_comp++;
+    		String toks[] = split_new(ss, ";");
+    		ArrayList<String> cc = new ArrayList<String>(Arrays.asList(toks));
+    		CC.put(Key, cc);
+    		Key++;
     	}
     	
- 	
-    	System.out.println("Some Debugging");
+    
+    	
+    	double len = 0.0;
 
-    	System.out.println("sets ...");
-    	for(int j = 0; j < size; j++){
-    		for(String rr: sets[j]){
-    			System.out.println("rr = " + rr);
-    		}
-    		System.out.println("............................");
-    	}
-    	
-    	
-    	for(int j = 0 ; j < size - 1; j++)
-    	{
-    	String edge_added = find_min_distance_and_update_connected_components(sets, size);
-    	System.out.println(j + "  = edge added = " + edge_added);
-    	}
-    	
-    	System.out.println("Sanity Check");
-    	
-     	for(int j = 0 ; j < size; j++)
-    	{ 
-     		
-    	   System.out.println("d = " + sets[j][0]);
-    	}
-    	
-     	return null;
-    }
     
-    static String printMST(double[] parent, double[][] graph, Integer V, Integer[] map)
+   int initial_size = CC.size(); 	
+   double[][] min_distances = new double[CC.size()][CC.size()];
+
+   while(true)
     {
-        System.out.println("Edge   Weight");
-        String s = "";
-        for (Integer i = 1; i < V; i++){
-          
+    	int x = 0;
+        int y = 0;
         	
-        	System.out.println(parent[i]+ " - "+ i+ " " +
-                               graph[i][(int) parent[i]]);
-        	s = s + ((int)parent[i]) + " " + i.toString() + ";";
-  
-        }
-        
-        System.out.println(s);
-        
-        return s;
+        double min = Double.MAX_VALUE;
+    	for(Integer key1 : CC.keySet()){  		
+    		for(Integer key2 : CC.keySet()){
+    			if(key1 == key2){
+    				min_distances[key1][key2] = 0.0;
+    				continue;
+    			}
+
+    			ArrayList<String> a1 = CC.get(key1);
+    			ArrayList<String> a2 = CC.get(key2);
+    			
+    			
+    			double min_cur = 0.0;
+    			if(min_distances[key1][key2] != 0){
+    				min_cur = min_distances[key1][key2];
+    			}
+    			else{
+    			String edge_min = find_min_dist(a1, a2);
+    			String edMin[] = edge_min.split("_");
+    			
+    			min_cur = Double.parseDouble(edMin[1]);
+    			}
+    			min_distances[key1][key2] = min_cur;
+    			min_distances[key2][key1] = min_cur;
+    			if( min_cur < min)
+    			{
+    				min = min_cur;
+    				x = key1;
+    				y = key2;
+    			}
+    			
+    		} 		
+    	}
+
+    	ArrayList<String> a1 = CC.get(x);
+    	ArrayList<String> a2 = CC.get(y);
+    	a1.addAll(a2);
+    	
+    	len += min;
+
+    	CC.put(x, a1);
+
+    	CC.remove(y);
+
+    	for(int i = 0; i < initial_size; i++){
+    		
+    		if(min_distances[y][i] < min_distances[x][i]){
+    			min_distances[x][i] = min_distances[y][i];
+    			min_distances[i][x] = min_distances[i][y];
+    			min_distances[x][y] = 0.0;
+    			min_distances[y][x] = 0.0;
+    		}
+    	}
+    	
+    	if(CC.size() == 1) break;
+    }
+    	return len;
     }
     
     
-    static String Prim(String[] points){
+
+    
+
+    
+    
+    static double Prim(String[] points){
     	
     	Integer n = points.length;
     	Double length = 0.0;
     	
     	if(n == 0){
-    		return null;
+    		return 0.0;
     	}
     	
     	Double[] dist = new Double[n];
@@ -313,21 +230,19 @@ public class ComputeMST {
                 
               }
             }
-            
-            
             length += bestdist;
             prim_mst = prim_mst + edge_added + ";";
-            System.out.println("bestdistance added = " + bestdist);
-            System.out.println("edge_added = " + edge_added);
-            System.out.println("bestdist = " + bestdist);
+            //System.out.println("bestdistance added = " + bestdist);
+            //System.out.println("edge_added = " + edge_added);
+            //System.out.println("bestdist = " + bestdist);
             done[best] = true;
             for (int j = 0; j < n; j++) {
               if (!done[j]&& dist[j] > compute_distance(points[best], points[j])) {
-            	  System.out.println(points[best]  + " ," + points[j]);
+            	  //System.out.println(points[best]  + " ," + points[j]);
                 dist[j] = compute_distance(points[best], points[j]);
                 vertex[j] = points[best]; 
-                System.out.println("vertex[j] = " + vertex[j] );
-                System.out.println("distance = " + dist[j]);
+                //System.out.println("vertex[j] = " + vertex[j] );
+                //System.out.println("distance = " + dist[j]);
                 
                 
               }
@@ -336,13 +251,15 @@ public class ComputeMST {
     	
     	System.out.println("length = " + length);
     	System.out.println("primMST = " + prim_mst);
-    	return prim_mst;
+    	
+    	return length;
+    	//return prim_mst;
     }
     
   
     
     public static String PrimShort(String[] points, double maxLength){
-        System.out.println("Entering PrimShort...");
+      //  System.out.println("Entering PrimShort... maxLength = " + maxLength);
            
          
        // for (Point p : points) {
@@ -440,26 +357,22 @@ public class ComputeMST {
               done[node2] = true;
               done[node] =  true;
               short_mst1 = short_mst1 + ";" + points[node] + "," + vertex[node];
-              System.out.println("length added = " + bestdist);
+              //System.out.println("length added = " + bestdist);
             }      
              
             //System.out.println("Exiting loop...");
         }
-       // System.out.println("Exiting PrimShort...");
-         
-     //   for (Point p : points) {
-     //     System.out.println(p.print());
-      //  }
         
         for(int i = 0; i < n; i++){
         	if(done[i] == false){
         		short_mst1 = short_mst1 + points[i] + "," + points[i] + ";C";
         	}
         }
-        System.out.println("short mst = " + short_mst);
-        System.out.println("short mst with connected components = " + short_mst1);
-        System.out.println("lenght = " + length);
-        return short_mst1;
+
+        assert(length < n);
+        
+
+        return short_mst1 +"l" + Double.toString(length);
       } 
     
     
@@ -474,7 +387,7 @@ public class ComputeMST {
   	  
   	  String[] result = new String[n];
   	  ArrayList<String> res = new ArrayList();
-  	  System.out.println("n = " + n);
+  	 // System.out.println("n = " + n);
   	  
   	  int k = 0;
   	  while (true) {
@@ -500,87 +413,14 @@ public class ComputeMST {
   			  dist[i] = Math.min(dist[i], compute_distance(points.get(furthest), points.get(i))); //Point.dist(points.get(furthest), points.get(i)));
   		  }
   	  }
-//  	  System.out.println("Exiting epsNet...");
-  	  
-  	  for(String ress : res){
-  		  //System.out.println("res = " + ress);
-  	  }
-  	  
+
   	  String[] myArray = res.toArray(new String[res.size()]);
   	  return myArray;
     }
 
     
-    // Function to construct and print MST for a graph represented
-    //  using adjacency matrix representation
-    static String primMST(double[][] graph, Integer V, Integer[] map)
-    {
-        // Array to store constructed MST
-        double parent[] = new double[V];
- 
-        // Key values used to pick minimum weight edge in cut
-        double key[] = new double [V];
- 
-        // To represent set of vertices not yet included in MST
-        Boolean mstSet[] = new Boolean[V];
- 
-        // Initialize all keys as INFINITE
-        for (int i = 0; i < V; i++)
-        {
-            key[i] = Integer.MAX_VALUE;
-            mstSet[i] = false;
-        }
- 
-        // Always include first 1st vertex in MST.
-        key[0] = 0;     // Make key 0 so that this vertex is
-                        // picked as first vertex
-        parent[0] = -1; // First node is always root of MST
- 
-        // The MST will have V vertices
-        for (int count = 0; count < V-1; count++)
-        {
-            // Pick the minimum key vertex from the set of vertices
-            // not yet included in MST
-            int u = minKey(key, mstSet, V);
- 
-            // Add the picked vertex to the MST Set
-            mstSet[u] = true;
- 
-            // Update key value and parent index of the adjacent
-            // vertices of the picked vertex. Consider only those
-            // vertices which are not yet included in MST
-            for (int v = 0; v < V; v++)
- 
-                // graph[u][v] is non zero only for adjacent vertices of m
-                // mstSet[v] is false for vertices not yet included in MST
-                // Update the key only if graph[u][v] is smaller than key[v]
-                if (graph[u][v]!=0 && mstSet[v] == false &&
-                    graph[u][v] <  key[v])
-                {
-                    parent[v]  = u;
-                    key[v] = graph[u][v];
-                }
-        }
- 
-        // print the constructed MST
-        String s = printMST(parent, graph, V, map);
-        
-        System.out.println("value returned by PrimMST = " + s);
-        
-        return s;
-    }
 
-    
-	static void print_graph(Integer[][] graph, int V){
-		
-		for(int i = 0; i < V; i++){
-			for(int j = 0; j < V; j++){
-				System.out.println("Graph[" + i + "][" + j + "] = " + graph[i][j]);
-			}
-		}		
-	}
-    
-    
+
     
 	// Computes distance between two points "x" and "y" such x , y \in \mathhbb{R^d}
 	static double compute_distance(String x, String y){
@@ -603,61 +443,77 @@ public class ComputeMST {
 	
 	
 
-	static double[][] get_graph(Integer V) throws IOException{
-	   	    
-           FileReader fr = new FileReader("/home/avadapal/workspace/myFirstSpark/src/MST/input.txt");
-           BufferedReader reader = new BufferedReader(fr);
-           
-           System.out.println("Reading File line by line using BufferedReader");
-         
-           String line = reader.readLine();
-           System.out.println("Reading File line by line using BufferedReader");
-           System.out.println("V = " + V);
-           double graph[][] = new double[V][V];
-          // graph[16][16] = 0;
-           String[] lines = new String[V];
-        int k = 0;
-		    while (line != null) {
-		        //System.out.println("k = " + k);
-		       lines[k] = line;
-		     line = reader.readLine();
-		     k++;
-		    }
-		    reader.close();
-		    System.out.println("Reading File line by line using BufferedReader" + V);
-				for(int i = 0; i < V; i++){ 
-					//System.out.println("V = " + V);
-					String token1[] = lines[i].split(";");
-					for(int j = 1; j < V; j++){
-					//System.out.println("j = " + j);	
-					String token2[] = lines[j].split(";");
-					//System.out.println("V = " + V);
-					double d =  compute_distance(token1[1], token2[1]);
-					//System.out.println("token1 = " + token1[1] + " --- " + token1[0]);
-					//System.out.println("token2 = " + token2[1] + " --- " + token2[0]);
-					//System.out.println("i = " + i + " and j = " + j);
-					graph[i][j] = d; 
-					graph[j][i] = d;					
-					}
-				}			
-		System.out.println("Done");
-		return graph;
+
+	
+	
+	public static double seq_MST(String input) throws IOException{
+		
+		BufferedReader reader = new BufferedReader(new FileReader(input));
+		
+		int nlines1 = 0;
+	
+		while (true){
+			
+	       String t = reader.readLine();
+	       
+	       //System.out.println("t = " + t);
+	        if(t == null){	        	//System.out.println("t = " + t);
+	        	break;
+	        }
+	        
+			nlines1++;
+			
+		}
+		
+		String[] points = new String[nlines1];
+		
+		
+		
+		reader.close();
+		
+	
+		BufferedReader reader1 = new BufferedReader(new FileReader(input));
+		
+		int n = 0;
+		for (n = 0; n < nlines1; n++){
+			
+	       String t = reader1.readLine();
+	    
+	       String[] tokens = t.split(";");
+	       
+	       points[n] = tokens[1];
+	       
+
+		}
+		
+		reader1.close();
+		
+		double l = Prim(points);
+
+		
+		return l;
 	}
 	
 	public static void main(String[] args) throws IOException{
 	
-		
+		Logger.getLogger("org").setLevel(Level.OFF); 
+		Logger.getLogger("akka").setLevel(Level.OFF);
 		
 		FileWriter fw = new FileWriter("/home/avadapal/workspace/myFirstSpark/src/MST/input1.txt");
 		
 		Random rand = new Random();
 		
-		for(int i = 1; i <= 20000; i++)
+		for(int i = 1; i <= 300; i++)
 		{
-			int  n1 = rand.nextInt(50) + 1;
-			int  n2 = rand.nextInt(50) + 1;
-			int  n3 = rand.nextInt(50) + 1;
-			String s = i +";"+ n1 + " " + n2; // + " " + n3;
+			int  n1 = rand.nextInt(100) + 1;
+			int  n2 = rand.nextInt(100) + 1;
+			int  n3 = rand.nextInt(100) + 1;
+			int  n4 = rand.nextInt(100) + 1;
+			int  n5 = rand.nextInt(100) + 1;
+			int  n6 = rand.nextInt(100) + 1;
+			int  n7 = rand.nextInt(100) + 1;
+			int  n8 = rand.nextInt(100) + 1;
+			String s = i +";"+ n1 + " " + n2 + " " + n3 + " " + n4; // + " " + n5 + " " + n6 + " " + n7 + " " + n8;
 			//System.out.println("s = " + s);
 			fw.write(s + '\n');
              		
@@ -682,12 +538,10 @@ public class ComputeMST {
 	        for(String a: cordsplit){
 	        	if(Integer.parseInt(a) > max){
 	        		max = Integer.parseInt(a);
-	        		//System.out.println("max = " + max);
 	        	}
 	         }
 		    }
 	        else{
-	        	//System.out.println("t = " + t);
 	        	break;
 	        }
 	        
@@ -697,36 +551,28 @@ public class ComputeMST {
 		
 		reader.close();
 		final int nlines = nlines1;
-		final int Delta = max;
+		final int Delta = max + 1;
+		final double eps = 0.20;
+		final int d = 4;
 		System.out.println("Delta = " + Delta);
-		
+		long startTime_dis = System.nanoTime(); 
 		System.out.println("Compute Minimum Spanning Tree");
 	    System.out.println("lines = " + nlines);
-	    
-	    //double[][] graph = get_graph(nlines);
-
-	    //SparkConf sparkConf = new SparkConf().setAppName("ComputeMST").setMaster("spark://avadapal-XPS-13-9350:7077").set("spark.executor.memory","2g").set("spark.cores.max", "4");
 	    SparkConf sparkConf = new SparkConf().setAppName("ComputeMST").setMaster("local[4]").set("spark.executor.memory","1g");		
-	    //SparkConf sparkConf = new SparkConf().setAppName("ComputeMST").setMaster("spark://localhost:7077").set("spark.executor.memory","2g");
 	    JavaSparkContext ctx = new JavaSparkContext(sparkConf);	    
 		System.out.println("Collection being done!");
 
 		JavaRDD<String> lines = ctx.textFile(inputPath, 16); 
 	    
-		//TODO: Change this style of Heirarchical Clustering.		
-		
-		System.out.println("Before Clustering");
 		
 		JavaPairRDD<Integer, String> heirarchical_clusters = lines.mapToPair(new PairFunction<String, Integer, String>()
 				{
-			  Integer Key = 0;
               public Tuple2<Integer, String> call(String s){
          	   String[] tokens  = s.split(";");
-         	  System.out.println(nlines);
          	  String[] coordinates = tokens[1].split(" ");
          	  
-         	  Integer heirarchichal_break = Delta/2 + 1;
-         	  System.out.println("hbreak  = " + heirarchichal_break);
+         	  Integer heirarchichal_break = Delta/2;
+    
          	  String bin = "";
          	  
          	  for(String a: coordinates){
@@ -742,27 +588,18 @@ public class ComputeMST {
          			bin = bin + "0";  
          		  }
          	  }
-         	  System.out.println("bin = " + bin);
          	  Integer key = Integer.parseInt(bin, 2) + 1;
          	     	   
          	   return new Tuple2<Integer, String>(key, s);
-          	   //return new Tuple2<Integer, String>(Integer.parseInt(tokens[0]), (tokens[1]));
             }
 			}
 	
 	); 
 		
-
-	System.out.println("Clustering Done");	
-		
-	System.out.println(heirarchical_clusters.collect());
-	System.out.println("Heirarchical Clusters Above ");		
 	JavaPairRDD<Integer, Iterable<String>> h_grp = heirarchical_clusters.groupByKey();	
-	System.out.println(h_grp.collect());	
-	System.out.println("Grouped Values Above");
 	
-	
-	//Local Computations Here.
+	System.out.println("Heirarchical Clusters ... ");
+	System.out.println(h_grp.collect());
 	
 	JavaPairRDD<Integer, String> h_grp1 = h_grp.mapValues(new Function<Iterable<String>, String>() {
 	public String call(Iterable<String> s) {
@@ -773,120 +610,124 @@ public class ComputeMST {
 		  s1.next();
 		  no_of_ver++;
 		}
-         
-         
-		
-        System.out.println("Number of Vertices = " + no_of_ver);
-
-		String l = null;
-		double[][] graph = new double[no_of_ver][no_of_ver];
-		Integer[] map = new Integer[no_of_ver];
+	
 		String[] cords = new String[no_of_ver];
 		int i = 0;
 	    for(String t: s){
 	    	
 	    	String tokens[] = t.split(";");
-	    	map[i] = Integer.parseInt(tokens[0]);
 	    	cords[i] = tokens[1];
 	    	i++;
-	    	System.out.println(t);
 	    }
 	    
-	    for(String cor: cords){
-	    	System.out.println("co = " + cor);
-	    }
-	    
-	   for(int j = 0; j < i ; j++ ){
-	    	for(int k = 0; k < i; k++){
-	    		graph[j][k] = compute_distance(cords[j], cords[k]);
-	    	}
-	    } 
- 	   
-    l = primMST(graph, no_of_ver, map);
-	String tks[] = l.split(";");
-	String localMST = "";
-	for(String tt : tks){
-		System.out.println("tt = " + tt);
-		String tks1[] = tt.split(" ");
-		for(String ttt : tks1){
-			String cordinate = cords[Integer.parseInt(ttt)];
-			System.out.println("cordinate = " + cordinate);
-			localMST = localMST + cordinate + ",";
+
+	
+	 double Delta_l = Delta * 2.0 * Math.sqrt(d);
+	 double eps2Delta = eps * eps * (Delta_l/2);
+	 double epsDelta = eps * (Delta_l/2);
+
+	String cc = PrimShort(cords, epsDelta);
+	String[] toks = cc.split("l");
+	String len = toks[1];
+	
+	String connected_comps = toks[0];
+
+	
+	HashMap<String, Integer> cc_node = new HashMap<String, Integer>();
+	HashMap<Integer, String> node_cc = new HashMap<Integer, String>();
+	Map<Integer, ArrayList<String>> multiValueMap = new HashMap<Integer, ArrayList<String>>();
+	String[] ccs = split_new(connected_comps, "C");
+
+	ArrayList<String> nodesInMSF = new ArrayList<String>();
+	Integer Key = 0;
+	
+	for(String ss: ccs){
+		ArrayList<String> nodesincc = new ArrayList<String>(); 
+		String[] edges = split_new(ss , ";");
+		for(String sss: edges){
+		String[] nodes = split_new( sss , ",");
+		for(String mm : nodes){
+			cc_node.put(mm, Key);
+			node_cc.put(Key,mm);
+			nodesInMSF.add(mm);
+			nodesincc.add(mm);
 		}
+		}
+	    multiValueMap.put(Key, nodesincc);
+		Key++;
+	}
+	
+	
+	String[] net1 = epsNet(nodesInMSF, eps2Delta);
+	Map<Integer, ArrayList<String>> connected_comps_net = new HashMap<Integer, ArrayList<String>>();
+	for(String nn1 :  net1){
+		Integer key = cc_node.get(nn1);
+		ArrayList<String> a = new ArrayList<String>();
+		if(connected_comps_net.containsKey(key)){
+		a = connected_comps_net.get(key);
+		a.add(nn1);
+		connected_comps_net.put(key, a);
+		}
+		else{
+			a.add(nn1);
+			connected_comps_net.put(key, a);
+		}
+	}
+	
+	
+	String connected_compo_new ="";
+	
+	for(int key = 0; key < Key; key++){
+		ArrayList<String> ccc = connected_comps_net.get(key);
+		for(String r : ccc){
+			connected_compo_new = connected_compo_new + r + "," + r + ";";
+		}
+		connected_compo_new += "C";
 		
-		
-		localMST = localMST + ";";
 	}
 
-	String new_prim = Prim(cords);
-	
-	 ArrayList<String> cords1 = new ArrayList<String>(Arrays.asList(cords));
-	 String[] net = epsNet(cords1, 0.8);
-	
-	 System.out.println("Printing the Net: ");
-	 for(String nn : net){
-		 System.out.println("net = " + nn);
-	 }
+	return connected_compo_new + "l" + len;
 
-	String connected_comps = PrimShort(net, 7.8);
-	
-	System.out.println("connected_comps = " + connected_comps);
-	
-	
-	System.out.println("new_prim = " + new_prim);
-	System.out.println("localMST = " + localMST);
-    System.out.println("MST computed Here");    	
-	
-    return connected_comps;
-    //return new_prim;
-    //return localMST;
 	}
 	});
 	
+	
+	System.out.println("h_grp1 below");
 	System.out.println(h_grp1.collect());
-	System.out.println("h_grp1 above");
 	
 	JavaRDD<String> values = h_grp1.values();	
 	List<String> vals = values.collect();
 	List<String> vals1 = new ArrayList<String>(); 
+	
+	double length = 0.0;
+	
 	for(String ss : vals){
-		System.out.println("ss = " + ss);
-		String[] tokens = ss.split("C");
+		String[] tok = ss.split("l");
+		String cc = tok[0];
+	    length += Double.parseDouble(tok[1]);
+		String[] tokens = cc.split("C");
 		for(String sss: tokens){
-			System.out.println("sss = " + sss);
 			if(sss.length() > 0 && (sss != null || sss !="" || !sss.isEmpty()))	vals1.add(sss);	
 		}
-		
 	}
 	
 	
-	System.out.println("Printing Vals1");
+	double len = combine_connected_components(vals1);
+	long estimatedTime_dis = System.nanoTime() - startTime_dis;
 	
-	for(String tt: vals1){
-		System.out.println("tt = " + tt);
-	}
+	System.out.println("len = " + len);
 	
+	double mst_val = length + len;
 	
-	combine_connected_components(vals1);
 	System.out.println("End of the Program");
+	long startTime_seq = System.nanoTime();    
+	// ... the code being measured ...  
+	double len_reg_mst = seq_MST(inputPath);
+	long estimatedTime_seq = System.nanoTime() - startTime_seq;
 	
-	System.out.println("a debug");
-	
-	String[] Input = {"1 4", "4 4", "2 2", "1 1"};
-	
-	String[] Inp = {"1 1", "1 2", "1 3", "5 1", "5 2", "5 3", "9 1", "9 2", "9 3", "14 1", "14 2", "14 3", "1 4", "1 5", "1 6", "14 4", "14 5"  };
-	ArrayList<String> Inp1 = new ArrayList<String>(Arrays.asList(Input));
-	//ArrayList<String> Inp1 = Input; 
-	
-	String short_prim = PrimShort(Inp, 1.2);
-	//String regularmst= Prim(Input);
-	System.out.println("short prim = " + short_prim);
-    //System.out.println("regulat mst = " + regularmst);
-	//String[] net = epsNet(Inp1, 3);
-	//System.out.println("Printing the net ...");
-//	for(String ne : net){
-	///	System.out.println("ne = " + ne);
-//	}
+	System.out.println("time for seq MST = " + estimatedTime_seq/1000000000);
+	System.out.println("time for Distr MST = " + estimatedTime_dis/1000000000);
+	System.out.println("mst_val = " + mst_val + " and regular mst = " + len_reg_mst);
 
 	}
 
