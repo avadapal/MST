@@ -451,14 +451,14 @@ public class ComputeMST implements java.io.Serializable {
 		
 		Random rand = new Random();
 		
-		for(int i = 1; i <= 10000; i++)
+		for(int i = 1; i <= 3000; i++)
 		{
-			int  n1 = rand.nextInt(100) + 1;
-			int  n2 = rand.nextInt(100) + 1;
-			int  n3 = rand.nextInt(100) + 1;
-			int  n4 = rand.nextInt(100) + 1;
-			int  n5 = rand.nextInt(100) + 1;
-			int  n6 = rand.nextInt(100) + 1;
+			int  n1 = rand.nextInt(10) + 1;
+			int  n2 = rand.nextInt(10) + 1;
+			int  n3 = rand.nextInt(10) + 1;
+			int  n4 = rand.nextInt(10) + 1;
+			int  n5 = rand.nextInt(10) + 1;
+			int  n6 = rand.nextInt(10) + 1;
 			String s = i +";"+ n1 + " " + n2 + " " + n3 + " " + n4 + " " + n5 + " " + n6;				
 			fw.write(s + '\n');             		
 		}
@@ -494,10 +494,12 @@ public class ComputeMST implements java.io.Serializable {
 		}
 		
 		reader.close();
+		
 		final int nlines = nlines1;
 		final int Delta = max + 1;
-		final double eps = 0.10;
+		final double eps = 0.30;
 		final int d = 6;
+		final int number_of_levels = 2;
 		
 		System.out.println("Delta = " + Delta);
 		long startTime_dis = System.nanoTime(); 
@@ -513,11 +515,17 @@ public class ComputeMST implements java.io.Serializable {
 		Function<Iterable<Point>, epsNet> {
 		
 			private static final long serialVersionUID = 1L;
+			int div = 1;
+			public unit_step(int den) {
+				div = den;
+				
+				// TODO Auto-generated constructor stub
+			}
 			public epsNet call( Iterable<Point> p) {
 				 
 				 double Delta_l = Delta * 2.0 * Math.sqrt(d);
-				 double eps2Delta = eps * eps * (Delta_l/2);
-				 double epsDelta = eps * (Delta_l/2);
+				 double eps2Delta = eps * eps * (Delta_l/div);
+				 double epsDelta = eps * (Delta_l/div);
 				
 				 Integer no_of_ver = 0;
 				 Iterator<Point> s1 = p.iterator();
@@ -550,7 +558,6 @@ public class ComputeMST implements java.io.Serializable {
 			};
 		
 		
-			
 			class eps_net implements
 			Function<Iterable<Point>, epsNet> {
 				
@@ -620,14 +627,19 @@ public class ComputeMST implements java.io.Serializable {
 				
 				class unit_step_logn implements
 				Function<epsNet, epsNet> {
-					
+					int den = 0;
 					private static final long serialVersionUID = 1L;
+					public unit_step_logn(int div_by) {
+						
+						den = div_by;
+						// TODO Auto-generated constructor stub
+					}
 					public epsNet call(epsNet epsnet) {
 						 
 						 Iterable<Point> p = epsnet.nodes_MSF;
 						 double Delta_l = Delta * 2.0 * Math.sqrt(d);
-						 double eps2Delta = eps * eps * (Delta_l/2);
-						 double epsDelta = eps * (Delta_l/2);
+						 double eps2Delta = eps * eps * (Delta_l/den);
+						 double epsDelta = eps * (Delta_l/den);
 						
 						 Integer no_of_ver = 0;
 						 Iterator<Point> s1 = p.iterator();
@@ -702,7 +714,8 @@ public class ComputeMST implements java.io.Serializable {
        			cluster_binary = cluster_binary + "0";  
        		  }				
 			}
-       	  Integer key = Integer.parseInt(cluster_binary, 2) + 1;     	   
+       	  Integer key = Integer.parseInt(cluster_binary, 2) + 1; 
+       	  //System.out.println("regular tup - " + key + " , " + p.id);
     	  return new Tuple2<Integer, Point>(key, p);	
 		
 		}
@@ -716,7 +729,7 @@ public class ComputeMST implements java.io.Serializable {
 			double[] cordinates = p.coordinates;
 	
 			String cluster_binary = "";
-			int n_levels = 3;
+			int n_levels = number_of_levels;
 			String[] clusters = new String[n_levels];
 			for(int j = 0; j < n_levels; j++ ){
 				clusters[j] = "";
@@ -747,40 +760,52 @@ public class ComputeMST implements java.io.Serializable {
 				levels.add(key);
 			}
 
+			//System.out.println("logn tup - " + levels + " , " + p.id);
 		   return new Tuple2<ArrayList<Integer> , Point> (levels, p);
 		}
 	});
 	
 		
-	h_clusters_logn.collect();
+
+	
 	JavaPairRDD<ArrayList<Integer> ,Iterable<Point>> h_clusters_logn_grouping = h_clusters_logn.groupByKey();	
 	
-	int no_of_levels = 0;
+	int level_counter = 0;
 	JavaPairRDD<ArrayList<Integer>, MST.epsNet> distributed_msts_logn;
 	
-	distributed_msts_logn = h_clusters_logn_grouping.mapValues(new eps_net());
 	
+	int den = (int) Math.pow(2, number_of_levels);
+	distributed_msts_logn = h_clusters_logn_grouping.mapValues(new unit_step(den));
 	while(true){
-		
+
+    level_counter++;
+
+	if(level_counter >= (number_of_levels - 1)) break;
+	
+	System.out.println("level counter = " + level_counter);
+	
 	JavaPairRDD<ArrayList<Integer>, MST.epsNet> distributed_msts_logn1 = distributed_msts_logn.mapToPair(new next_level());
 
-	JavaPairRDD<ArrayList<Integer>, MST.epsNet> distributed_msts_next_level = distributed_msts_logn1.reduceByKey(new union_eps_nets());
+	for(epsNet net: distributed_msts_logn1.values().collect()){
+		System.out.println("len = " + net.length_MSF);
+	}
 	
-	List<epsNet> inter = distributed_msts_next_level.values().collect();
+	List<epsNet> inter = distributed_msts_logn1.values().collect();
 	
 	reevaluate_connected_comp(inter);
 	
-	distributed_msts_logn = distributed_msts_next_level.mapValues(new unit_step_logn());
-	
-	no_of_levels++;
+	JavaPairRDD<ArrayList<Integer>, MST.epsNet> distributed_msts_next_level = distributed_msts_logn1.reduceByKey(new union_eps_nets());
 
-	if(no_of_levels > 2) break;
+	den = den/2;
+	
+	distributed_msts_logn = distributed_msts_next_level.mapValues(new unit_step_logn(den));
+	
 	}
 	
 	JavaPairRDD<Integer, Iterable<Point>> h_grouping = h_clusters.groupByKey();	
 
 		
-	JavaPairRDD<Integer, epsNet> distributed_msts = h_grouping.mapValues(new unit_step());
+	JavaPairRDD<Integer, epsNet> distributed_msts = h_grouping.mapValues(new unit_step(2));
 	
 	JavaRDD<epsNet> epsNetsRDD =  distributed_msts.values();
 	List<epsNet> epsNets = epsNetsRDD.collect();
@@ -808,6 +833,8 @@ public class ComputeMST implements java.io.Serializable {
 		max2 += max1;
 	} 
 	
+	double total_len_dup = reevaluate_connected_comp(epsNets);
+	
 	double lenlogn = reevaluate_connected_comp(epsNetslogn);
 	
 	ArrayList<Point> all_points = new ArrayList<Point>();
@@ -830,15 +857,22 @@ public class ComputeMST implements java.io.Serializable {
 	EpsilonMST combined = PrimShortNew(all_points, Double.MAX_VALUE);
 	EpsilonMST combinedlogn = PrimShortNew(all_pointslogn, Double.MAX_VALUE);
 	
-	System.out.println("combinedlogn = " + combinedlogn.length);
-	System.out.println("lenlogn = " + lenlogn);
-	System.out.println("total = " + total_len);
-	System.out.println("..... debugging the new method!!!!! ......");
-	double length_new_method = total_len + combined.length;
-    
-	double total_logn = combinedlogn.length + lenlogn;
-	
+	System.out.println("combinedlogn (cost of joining) = " + combinedlogn.length);
+	System.out.println("lenlogn (from eps-MST's) = " + lenlogn);
+    double total_logn = combinedlogn.length + lenlogn;	
 	System.out.println("Total Length logn level = " + total_logn);
+	
+	
+
+	System.out.println("combined regular =  " + combined.length);
+	System.out.println("total (from eps MST) = " + total_len + " < > " + total_len_dup);
+	double length_new_method = total_len + combined.length;
+	System.out.println("total length (regular) = " + length_new_method);
+	
+	System.out.println("..... debugging the new method!!!!! ......");
+	
+    
+	
 	
 	long estimatedTime_dis = System.nanoTime() - startTime_dis;
 
