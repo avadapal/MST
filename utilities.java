@@ -38,5 +38,39 @@ public class utilities {
 	    distance = Math.sqrt(distance);	
 		return distance;
 	}
+	
+	static double mean(ArrayList<Double> x){
+		
+		int n = x.size();
+		double sum = 0.0;
+		
+		for(int i = 0; i < n; i++){			
+			sum += x.get(i);
+		}
+		
+		sum = sum/n;
+		
+		return sum;
+		
+	}
+	
+	static double variance(ArrayList<Double> x){
+		
+		
+		int n = x.size();
+		
+		double mu = mean(x);
+		double sum = 0.0;
+		
+		
+		for(int i = 0; i < n; i++){			
+			sum += (x.get(i) - mu) * (x.get(i) - mu);
+		}
+		
+		sum = sum/n;
+		
+		return sum;
+		
+	}
 
 }
