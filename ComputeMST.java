@@ -581,10 +581,10 @@ public class ComputeMST implements java.io.Serializable {
 		Logger.getLogger("akka").setLevel(Level.OFF);
 		
 		
-      String inputPath3 = "/home/avadapal/workspace/myFirstSpark/src/MST/unbalance.txt";
+      /* String inputPath3 = "/home/avadapal/workspace/myFirstSpark/src/MST/unbalance.txt";
         
-       //final FileWriter tree_edges = new FileWriter("/home/avadapal/workspace/myFirstSpark/src/MST/tree.txt");
-        ;
+
+       
 		BufferedReader reader3 = new BufferedReader(new FileReader(inputPath3));
 		FileWriter fw3 = new FileWriter("/home/avadapal/workspace/myFirstSpark/src/MST/input_skew4.txt");
 
@@ -620,7 +620,7 @@ public class ComputeMST implements java.io.Serializable {
 	        	else{
 	        		inp = (int) Double.parseDouble(linesplit[k]);
 	        	} */
-	        	
+	        /*	
 	        	fw3.write(inp + " ");
 	        }
 	        fw3.write('\n');
@@ -631,10 +631,10 @@ public class ComputeMST implements java.io.Serializable {
 	        
 			num++;
 			
-		}
+		} */
 		
 		
-		FileWriter fw = new FileWriter("/home/avadapal/workspace/myFirstSpark/src/MST/input2.txt");
+	/*	FileWriter fw = new FileWriter("/home/avadapal/workspace/myFirstSpark/src/MST/input2.txt");
 		
 		Random rand = new Random();
 		
@@ -650,23 +650,23 @@ public class ComputeMST implements java.io.Serializable {
 			fw.write(s + '\n');             		
 		}
 		
-        fw.close();
+        fw.close(); */
         
         
 	    SparkConf sparkConf = new SparkConf().setAppName("ComputeMST").setMaster("local[4]").set("spark.executor.memory","1g");		
 	    JavaSparkContext ctx = new JavaSparkContext(sparkConf);	 
         
 
-  double[][] union_of_msts = new double[10000][10000];    
+  
  //List<Set<TreeEdge>> all_edges = new ArrayList<Set<TreeEdge>>();
  //  ArrayList<List<TreeEdge>>all_edges = new ArrayList<List<TreeEdge>>();
  List<TreeEdge> all_edges = new ArrayList<TreeEdge>();
  for(int ii = 0; ii < 1; ii++)
  {
         System.out.println("number of runs = " + ii);
-        
-        String inputPath = "/home/avadapal/workspace/myFirstSpark/src/MST/shuttle_norm.txt";
-        
+
+        //String inputPath = "/home/avadapal/workspace/myFirstSpark/src/MST/shuttle_norm.txt";
+        String inputPath = args[0];
 		BufferedReader reader = new BufferedReader(new FileReader(inputPath));
 		int nlines1 = 0;
 		double max = 0;
