@@ -670,7 +670,7 @@ public class ComputeMST implements java.io.Serializable {
 		BufferedReader reader = new BufferedReader(new FileReader(inputPath));
 		int nlines1 = 0;
 		double max = 0;
-		int d1 = 0;
+		int dim = 0;
 		while (true){
 			
 	       String t = reader.readLine();
@@ -680,12 +680,15 @@ public class ComputeMST implements java.io.Serializable {
 	        String linesplit[] = t.split(";");
 	       
 	        String cordsplit[] = linesplit[1].split(" ");
+	        int d1 = 0;
 	        for(String a: cordsplit){
 	        	if(Double.parseDouble(a) > max){
 	        		max = Double.parseDouble(a);
-	        		d1 ++;
+	        		
 	        	}
+	        	d1 ++;
 	         }
+	         dim = d1;
 		    }
 	        else{
 	        	break;
@@ -696,11 +699,11 @@ public class ComputeMST implements java.io.Serializable {
 		}
 		
 		reader.close();
-		System.out.println("d1 = " + d1);
+		System.out.println("dim = " + dim);
 		final int nlines = nlines1;
 		final double Delta = max + 1;
 		final double eps = 0.30;
-		final int d = d1 - 1;
+		final int d = dim;
 		final int number_of_levels = 6;
 		
 		System.out.println("Delta = " + Delta);
